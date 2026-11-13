@@ -1,53 +1,35 @@
 
-
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from pathlib import Path
 import pandas as pd
 import joblib
 
-# ==================================
-# PROJECT PATH
-# ==================================
-
+# Project path
 BASE_DIR = Path(__file__).resolve().parent
-
 MODEL_PATH = BASE_DIR / "classification_model.pkl"
 
-# ==================================
-# LOAD MODEL
-# ==================================
-
+# Load model
 if not MODEL_PATH.exists():
     raise FileNotFoundError("classification_model.pkl not found!")
 
 model = joblib.load(MODEL_PATH)
 
-# ==================================
-# FASTAPI APPLICATION
-# ==================================
-
+# FastAPI application
 app = FastAPI(
-    title="Loan Classification Prediction",
+    title="Loan Prediction",
     description="Loan Approval Prediction using Machine Learning",
     version="1.0"
 )
 
-# ==================================
-# HTML TEMPLATES
-# ==================================
-
+# HTML templates
 templates = Jinja2Templates(
     directory=str(BASE_DIR / "templates")
 )
 
-# ==================================
-# INPUT FEATURES
-# ==================================
-
+# Input features
 class LoanInput(BaseModel):
-
     age: int
     no_of_dependents: int
     education: str
@@ -74,13 +56,9 @@ class LoanInput(BaseModel):
     interest_rate: float
 
 
-# ==================================
-# HOME PAGE
-# ==================================
-
+# Home page
 @app.get("/")
 def home(request: Request):
-
     return templates.TemplateResponse(
         request=request,
         name="classification.html",
@@ -88,56 +66,65 @@ def home(request: Request):
     )
 
 
-# ==================================
-# PREDICTION API
-# ==================================
-
+# Prediction API
 @app.post("/predict")
 def predict(data: LoanInput):
 
     try:
-
         # Convert input into DataFrame
-        input_df = pd.DataFrame(
-            [data.model_dump()]
-        )
+        input_df = pd.DataFrame([data.model_dump()])
+
+        # Match the model's training column order
+        if hasattr(model, "feature_names_in_"):
+            expected_columns = list(model.feature_names_in_)
+
+            missing_columns = [
+                col for col in expected_columns
+                if col not in input_df.columns
+            ]
+
+            if missing_columns:
+                raise ValueError(
+                    f"Missing model features: {missing_columns}"
+                )
+
+            input_df = input_df[expected_columns]
 
         print("Input DataFrame:")
         print(input_df)
 
-        # Make prediction
+        # Prediction
         prediction = model.predict(input_df)[0]
 
-        # Get prediction result
+        # Convert prediction to readable status
         if prediction == 1:
-            result = "Approved"
+            loan_status = "Approved"
+        elif prediction == 0:
+            loan_status = "Rejected"
         else:
-            result = "Rejected"
+            loan_status = str(prediction)
 
         print("Prediction:", prediction)
-        print("Loan Status:", result)
+        print("Loan Status:", loan_status)
 
-        # Return output
         return {
-            "prediction": int(prediction),
-            "result": result,
+            "prediction": str(prediction),
+            "loan_status": loan_status,
             "message": "Prediction completed successfully"
         }
 
     except Exception as e:
+        print("Prediction Error:", str(e))
 
-        return {
-            "error": str(e)
-        }
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
-# ==================================
-# HEALTH CHECK
-# ==================================
-
+# Health check
 @app.get("/health")
 def health():
-
     return {
         "status": "Application is running",
         "model_loaded": model is not None

@@ -12,51 +12,28 @@
     <form id="LoanApprovalForm">
 
         <input id="age" type="number" placeholder="Age" required><br><br>
-
         <input id="no_of_dependents" type="number" placeholder="Dependents" required><br><br>
-
-        <input id="education" type="text" placeholder="Education" required><br><br>
-
-        <input id="self_employed" type="text" placeholder="Self Employed (Yes/No)" required><br><br>
-
+        <input id="education" placeholder="Education" required><br><br>
+        <input id="self_employed" placeholder="Self Employed" required><br><br>
         <input id="income_annum" type="number" placeholder="Annual Income" required><br><br>
-
         <input id="loan_amount" type="number" placeholder="Loan Amount" required><br><br>
-
         <input id="loan_term" type="number" placeholder="Loan Term" required><br><br>
-
         <input id="cibil_score" type="number" placeholder="CIBIL Score" required><br><br>
-
         <input id="residential_assets_value" type="number" placeholder="Residential Assets" required><br><br>
-
         <input id="commercial_assets_value" type="number" placeholder="Commercial Assets" required><br><br>
-
         <input id="luxury_assets_value" type="number" placeholder="Luxury Assets" required><br><br>
-
         <input id="bank_asset_value" type="number" placeholder="Bank Assets" required><br><br>
-
-        <input id="employment_type" type="text" placeholder="Employment Type" required><br><br>
-
+        <input id="employment_type" placeholder="Employment Type" required><br><br>
         <input id="years_employed" type="number" placeholder="Years Employed" required><br><br>
-
-        <input id="loan_purpose" type="text" placeholder="Loan Purpose" required><br><br>
-
-        <input id="property_area" type="text" placeholder="Property Area" required><br><br>
-
+        <input id="loan_purpose" placeholder="Loan Purpose" required><br><br>
+        <input id="property_area" placeholder="Property Area" required><br><br>
         <input id="credit_history_years" type="number" placeholder="Credit History Years" required><br><br>
-
         <input id="existing_loans" type="number" placeholder="Existing Loans" required><br><br>
-
         <input id="previous_defaults" type="number" placeholder="Previous Defaults" required><br><br>
-
         <input id="monthly_expenses" type="number" placeholder="Monthly Expenses" required><br><br>
-
         <input id="savings_balance" type="number" placeholder="Savings Balance" required><br><br>
-
         <input id="monthly_emi" type="number" placeholder="Monthly EMI" required><br><br>
-
         <input id="debt_to_income_ratio" type="number" step="any" placeholder="Debt to Income Ratio" required><br><br>
-
         <input id="interest_rate" type="number" step="any" placeholder="Interest Rate" required><br><br>
 
         <button type="submit">Predict</button>
@@ -66,108 +43,66 @@
     <h2 id="result"></h2>
 
     <script>
+    document.getElementById("LoanApprovalForm").addEventListener("submit", async function(event) {
 
-        document.getElementById("LoanApprovalForm").onsubmit = async function(event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        const fields = [
+            "age", "no_of_dependents", "education", "self_employed",
+            "income_annum", "loan_amount", "loan_term", "cibil_score",
+            "residential_assets_value", "commercial_assets_value",
+            "luxury_assets_value", "bank_asset_value", "employment_type",
+            "years_employed", "loan_purpose", "property_area",
+            "credit_history_years", "existing_loans", "previous_defaults",
+            "monthly_expenses", "savings_balance", "monthly_emi",
+            "debt_to_income_ratio", "interest_rate"
+        ];
 
-            let data = {
+        const numericFields = [
+            "age", "no_of_dependents", "income_annum", "loan_amount",
+            "loan_term", "cibil_score", "residential_assets_value",
+            "commercial_assets_value", "luxury_assets_value",
+            "bank_asset_value", "years_employed", "credit_history_years",
+            "existing_loans", "previous_defaults", "monthly_expenses",
+            "savings_balance", "monthly_emi", "debt_to_income_ratio",
+            "interest_rate"
+        ];
 
-                age: Number(document.getElementById("age").value),
+        const data = {};
 
-                no_of_dependents: Number(document.getElementById("no_of_dependents").value),
+        fields.forEach(field => {
+            const value = document.getElementById(field).value;
+            data[field] = numericFields.includes(field) ? Number(value) : value;
+        });
 
-                education: document.getElementById("education").value,
+        const resultElement = document.getElementById("result");
+        resultElement.innerText = "Predicting...";
 
-                self_employed: document.getElementById("self_employed").value,
+        try {
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
 
-                income_annum: Number(document.getElementById("income_annum").value),
+            const resultData = await response.json();
 
-                loan_amount: Number(document.getElementById("loan_amount").value),
-
-                loan_term: Number(document.getElementById("loan_term").value),
-
-                cibil_score: Number(document.getElementById("cibil_score").value),
-
-                residential_assets_value: Number(document.getElementById("residential_assets_value").value),
-
-                commercial_assets_value: Number(document.getElementById("commercial_assets_value").value),
-
-                luxury_assets_value: Number(document.getElementById("luxury_assets_value").value),
-
-                bank_asset_value: Number(document.getElementById("bank_asset_value").value),
-
-                employment_type: document.getElementById("employment_type").value,
-
-                years_employed: Number(document.getElementById("years_employed").value),
-
-                loan_purpose: document.getElementById("loan_purpose").value,
-
-                property_area: document.getElementById("property_area").value,
-
-                credit_history_years: Number(document.getElementById("credit_history_years").value),
-
-                existing_loans: Number(document.getElementById("existing_loans").value),
-
-                previous_defaults: Number(document.getElementById("previous_defaults").value),
-
-                monthly_expenses: Number(document.getElementById("monthly_expenses").value),
-
-                savings_balance: Number(document.getElementById("savings_balance").value),
-
-                monthly_emi: Number(document.getElementById("monthly_emi").value),
-
-                debt_to_income_ratio: Number(document.getElementById("debt_to_income_ratio").value),
-
-                interest_rate: Number(document.getElementById("interest_rate").value)
-
-            };
-
-            try {
-
-                let response = await fetch("/predict", {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify(data)
-
-                });
-
-                let result = await response.json();
-
-                if (!response.ok) {
-                    document.getElementById("result").innerText =
-                        JSON.stringify(result);
-                    return;
-                }
-
-                document.getElementById("result").innerText =
-                    "Loan Status: " + result.result;
-
+            if (!response.ok) {
+                resultElement.innerText =
+                    "Prediction Error: " + (resultData.detail || "Unknown error");
+                return;
             }
 
-            catch(error) {
+            resultElement.innerText =
+                "Loan Status: " + resultData.loan_status;
 
-                document.getElementById("result").innerText =
-                    "Error: " + error.message;
-
-            }
-
-        };
-
+        } catch (error) {
+            resultElement.innerText = "Error: " + error.message;
+        }
+    });
     </script>
 
 </body>
 </html>
-
-
-	
-
-
-
-
-   
